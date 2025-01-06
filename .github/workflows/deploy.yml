@@ -56,9 +56,13 @@ jobs:
       - name: Process Variables for Selected Environments
         shell: pwsh
         run: |
-          # Fetch the list of environments dynamically
+          # Ensure the environment data is parsed correctly
           $environments = ${{ fromJson(needs.prepare-matrix.outputs.environments) }}
-          
+
+          # Debug: Print the environments array to ensure it is parsed correctly
+          Write-Output "Environments to process: $($environments -join ', ')"
+
+          # Loop through each environment and process
           foreach ($environment in $environments) {
               Write-Output "Processing environment: $environment"
               ./fetch-vars.ps1 -environment $environment
