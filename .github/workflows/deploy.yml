@@ -56,7 +56,7 @@ jobs:
       - name: Process Variables for Selected Environments
         shell: pwsh
         run: |
-          # Ensure the environment data is parsed correctly
+          # Ensure the environment data is parsed correctly from the JSON string
           $environments = ${{ fromJson(needs.prepare-matrix.outputs.environments) }}
 
           # Debug: Print the environments array to ensure it is parsed correctly
