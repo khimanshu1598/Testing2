@@ -28,15 +28,15 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          # Initialize the environments array correctly
-          $environments = @()  # Correct array initialization
-          
+          # Correctly initialize the environments array
+          $environments = @()  # Use @() to initialize the array
+
           if ("${{ inputs.ls6_global_00 }}" -eq "true") { $environments += "LS6 Global - 00" }
           if ("${{ inputs.ls6_global_01 }}" -eq "true") { $environments += "LS6 Global - 01" }
           if ("${{ inputs.prod_global_00 }}" -eq "true") { $environments += "Production Global - 00" }
           if ("${{ inputs.prod_global_01 }}" -eq "true") { $environments += "Production Global - 01" }
 
-          # Convert array to JSON string for passing to deploy job
+          # Convert the array to a JSON string to pass to the deploy job
           $json = $environments | ConvertTo-Json -Compress
           echo "environments=$json" >> $env:GITHUB_OUTPUT
         shell: pwsh
@@ -63,7 +63,7 @@ jobs:
           # Ensure the environment data is parsed correctly from the JSON string
           $environments = ${{ fromJson(needs.prepare-matrix.outputs.environments) }}
 
-          # Debug: Print the environments array to ensure it is parsed correctly
+          # Debugging: Output the environments array to ensure it was parsed correctly
           Write-Output "Environments to process: $($environments -join ', ')"
 
           # Loop through each environment and process
