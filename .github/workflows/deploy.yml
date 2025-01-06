@@ -32,8 +32,9 @@ jobs:
           if ("${{ inputs.ls6_global_01 }}" -eq "true") { $environments += "LS6 Global - 01" }
           if ("${{ inputs.prod_global_00 }}" -eq "true") { $environments += "Production Global - 00" }
           if ("${{ inputs.prod_global_01 }}" -eq "true") { $environments += "Production Global - 01" }
-          $json = $environments | ConvertTo-Json
-          "environments=$json" >> $env:GITHUB_OUTPUT
+          # Output the selected environments as a JSON string
+          $json = $environments | ConvertTo-Json -Compress
+          echo "environments=$json" >> $env:GITHUB_OUTPUT
         shell: pwsh
 
   deploy:
