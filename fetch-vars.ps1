@@ -9,13 +9,7 @@ if (-not (Get-Module -ListAvailable -Name powershell-yaml)) {
 Import-Module powershell-yaml
 
 # Path to the consolidated YAML file
-$yamlPath = ".\consolidated-variables.yml"
-
-# Check if the YAML file exists
-if (-not (Test-Path $yamlPath)) {
-    Write-Error "YAML file '$yamlPath' not found. Exiting."
-    exit 1
-}
+$yamlPath = ".\library-variables.yml"  # Make sure this path is correct
 
 # Load the YAML file
 $yamlContent = Get-Content -Raw -Path $yamlPath
@@ -25,27 +19,31 @@ $librarySets = $yamlContent | ConvertFrom-Yaml
 Write-Output "Loaded YAML Content:"
 Write-Output $librarySets
 
-# Directly access the variables dictionary
+# Access the variables dictionary
 $variables = $librarySets
+
+# Debugging: Print the fetched variables
+Write-Output "Fetched Variables:"
+Write-Output $variables
 
 # Ensure the variables are not null before accessing them
 if ($null -eq $variables) {
-    Write-Error "Variables object is null. Exiting."
+    Write-Output "Variables object is null. Exiting."
     exit 1
 }
 
-# Fetch environment-specific values
+# Access the environment-specific values
 if ($variables.ContainsKey("CellName") -and $variables["CellName"].environments.ContainsKey($environment)) {
     $variableName = $variables["CellName"].environments[$environment].value
 } else {
-    Write-Error "CellName or environment '$environment' not found in variables. Exiting."
+    Write-Output "CellName not found for the environment $environment"
     exit 1
 }
 
-if ($variables.ContainsKey("DefaultVar") -and $variables["DefaultVar"].environments.ContainsKey($environment)) {
-    $defaultValue = $variables["DefaultVar"].environments[$environment].value
+if ($variables.ContainsKey("DefaultVar")) {
+    $defaultValue = $variables["DefaultVar"].value
 } else {
-    Write-Error "DefaultVar or environment '$environment' not found in variables. Exiting."
+    Write-Output "DefaultVar not found in variables"
     exit 1
 }
 
