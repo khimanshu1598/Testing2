@@ -8,58 +8,40 @@ if (-not (Get-Module -ListAvailable -Name powershell-yaml)) {
 }
 Import-Module powershell-yaml
 
-# Path to the YAML file
-$yamlPath = "library-variables.yml"
+# Path to the consolidated YAML file
+$yamlPath = ".\consolidated-variables.yml"
 
-Write-Output "Processing environment: $environment"
+# Load the YAML file
+$yamlContent = Get-Content -Raw -Path $yamlPath
+$librarySets = $yamlContent | ConvertFrom-Yaml
 
-try {
-    # Load and parse the YAML file
-    $yamlContent = Get-Content -Raw -Path $yamlPath
-    $librarySets = $yamlContent | ConvertFrom-Yaml
+# Print the content of the loaded YAML for debugging
+Write-Output "Loaded YAML Content:"
+Write-Output $librarySets
 
-    # Initialize variables
-    $variables = @{}
+# Access the library_sets dictionary
+$librarySets = $librarySets.library_sets
 
-    # Process each variable set
-    foreach ($set in $librarySets.library_sets.GetEnumerator()) {
-        $varName = $set.Key
-        
-        # Check for environment-specific variables
-        if ($set.Value.environments -ne $null -and 
-            $set.Value.environments.ContainsKey($environment)) {
-            $variables[$varName] = @{ 
-                value = $set.Value.environments[$environment].value 
-            }
-        }
-        # Use default value if available and no environment override exists
-        elseif ($set.Value.ContainsKey("value") -and 
-                -not $variables.ContainsKey($varName)) {
-            $variables[$varName] = @{ 
-                value = $set.Value.value 
-            }
-        }
-    }
-
-    # Get required variables with error handling
-    $variableName = if ($variables.ContainsKey("CellName")) {
-        $variables["CellName"].value
-    } else {
-        Write-Error "CellName not found in variables for environment: $environment"
-        exit 1
-    }
-
-    $defaultValue = if ($variables.ContainsKey("DefaultVar")) {
-        $variables["DefaultVar"].value
-    } else {
-        Write-Error "DefaultVar not found in variables for environment: $environment"
-        exit 1
-    }
-
-    # Display the message
-    Write-Output "Hi $variableName, This workflow is running for $environment and is having default value as $defaultValue"
-}
-catch {
-    Write-Error "Error processing variables: $_"
+# Ensure the variables are not null before accessing them
+if ($null -eq $librarySets) {
+    Write-Output "library_sets object is null. Exiting."
     exit 1
 }
+
+# Fetch variables for the provided environment
+if ($librarySets.ContainsKey("CellName") -and $librarySets.CellName.environments.ContainsKey($environment)) {
+    $variableName = $librarySets.CellName.environments[$environment].value
+} else {
+    Write-Output "CellName for $environment not found in variables"
+    exit 1
+}
+
+if ($librarySets.ContainsKey("DefaultVar")) {
+    $defaultValue = $librarySets.DefaultVar.value
+} else {
+    Write-Output "DefaultVar not found in variables"
+    exit 1
+}
+
+# Display the message
+Write-Output "Hi $variableName, This workflow is running for $environment and the default value is $defaultValue"
