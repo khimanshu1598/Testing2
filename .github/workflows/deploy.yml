@@ -1,4 +1,5 @@
 name: Deploy Environment
+
 on:
   workflow_dispatch:
     inputs:
@@ -32,32 +33,33 @@ jobs:
           if ("${{ inputs.ls6_global_01 }}" -eq "true") { $environments += "LS6 Global - 01" }
           if ("${{ inputs.prod_global_00 }}" -eq "true") { $environments += "Production Global - 00" }
           if ("${{ inputs.prod_global_01 }}" -eq "true") { $environments += "Production Global - 01" }
-          # Output the selected environments as a JSON string
           $json = $environments | ConvertTo-Json -Compress
           echo "environments=$json" >> $env:GITHUB_OUTPUT
         shell: pwsh
 
   deploy:
     needs: prepare-matrix
-    if: needs.prepare-matrix.outputs.environments != '[]'
-    strategy:
-      matrix:
-        environment: ${{ fromJson(needs.prepare-matrix.outputs.environments) }}
-      max-parallel: 2
-      
     runs-on: windows-latest
-    environment: ${{ matrix.environment }}
-
     steps:
       - uses: actions/checkout@v3
 
       - name: Install PowerShell-YAML Module
         shell: pwsh
         run: |
-          Install-Module -Name powershell-yaml -Force -Scope CurrentUser
-          Import-Module powershell-yaml
+          try {
+              Install-Module -Name powershell-yaml -Force -Scope CurrentUser -AllowClobber
+          } catch {
+              Write-Error "Failed to install powershell-yaml module: $_"
+              exit 1
+          }
 
-      - name: Process Variables
+      - name: Process Variables for Selected Environments
         shell: pwsh
         run: |
-          ./fetch-vars.ps1 -environment "${{ matrix.environment }}"
+          # Fetch the list of environments dynamically
+          $environments = ${{ fromJson(needs.prepare-matrix.outputs.environments) }}
+          
+          foreach ($environment in $environments) {
+              Write-Output "Processing environment: $environment"
+              ./fetch-vars.ps1 -environment $environment
+          }
