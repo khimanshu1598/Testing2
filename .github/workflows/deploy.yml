@@ -28,11 +28,15 @@ jobs:
     steps:
       - id: set-matrix
         run: |
-          $environments = @()
+          # Initialize the environments array correctly
+          $environments = @()  # Correct array initialization
+          
           if ("${{ inputs.ls6_global_00 }}" -eq "true") { $environments += "LS6 Global - 00" }
           if ("${{ inputs.ls6_global_01 }}" -eq "true") { $environments += "LS6 Global - 01" }
           if ("${{ inputs.prod_global_00 }}" -eq "true") { $environments += "Production Global - 00" }
           if ("${{ inputs.prod_global_01 }}" -eq "true") { $environments += "Production Global - 01" }
+
+          # Convert array to JSON string for passing to deploy job
           $json = $environments | ConvertTo-Json -Compress
           echo "environments=$json" >> $env:GITHUB_OUTPUT
         shell: pwsh
