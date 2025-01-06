@@ -3,10 +3,15 @@ on:
   workflow_dispatch:
     inputs:
       environments:
-        description: 'Target Environments (["LS6 Global - 00", "LS6 Global - 01"])'
+        description: 'Target Environments'
         required: true
-        type: string
-        default: '["LS6 Global - 00"]'
+        type: choice
+        options:
+          - "LS6 Global - 00"
+          - "LS6 Global - 01"
+          - "Production Global - 00"
+          - "Production Global - 01"
+        multiple: true
 
 jobs:
   deploy:
