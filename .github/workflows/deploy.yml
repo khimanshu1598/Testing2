@@ -2,22 +2,46 @@ name: Deploy Environment
 on:
   workflow_dispatch:
     inputs:
-      environments:
-        description: 'Target Environments'
-        required: true
-        type: choice
-        options:
-          - "LS6 Global - 00"
-          - "LS6 Global - 01"
-          - "Production Global - 00"
-          - "Production Global - 01"
-        multiple: true
+      ls6_global_00:
+        description: 'LS6 Global - 00'
+        type: boolean
+        required: false
+      ls6_global_01:
+        description: 'LS6 Global - 01'
+        type: boolean
+        required: false
+      prod_global_00:
+        description: 'Production Global - 00'
+        type: boolean
+        required: false
+      prod_global_01:
+        description: 'Production Global - 01'
+        type: boolean
+        required: false
 
 jobs:
+  prepare-matrix:
+    runs-on: windows-latest
+    outputs:
+      environments: ${{ steps.set-matrix.outputs.environments }}
+    steps:
+      - id: set-matrix
+        run: |
+          $environments = @()
+          if ("${{ inputs.ls6_global_00 }}" -eq "true") { $environments += "LS6 Global - 00" }
+          if ("${{ inputs.ls6_global_01 }}" -eq "true") { $environments += "LS6 Global - 01" }
+          if ("${{ inputs.prod_global_00 }}" -eq "true") { $environments += "Production Global - 00" }
+          if ("${{ inputs.prod_global_01 }}" -eq "true") { $environments += "Production Global - 01" }
+          $json = $environments | ConvertTo-Json
+          "environments=$json" >> $env:GITHUB_OUTPUT
+        shell: pwsh
+
   deploy:
+    needs: prepare-matrix
+    if: needs.prepare-matrix.outputs.environments != '[]'
     strategy:
       matrix:
-        environment: ${{ fromJSON(github.event.inputs.environments) }}
+        environment: ${{ fromJson(needs.prepare-matrix.outputs.environments) }}
       max-parallel: 2
       
     runs-on: windows-latest
