@@ -18,7 +18,7 @@ $librarySets = $yamlContent | ConvertFrom-Yaml
 # Fetch variables for the selected environment
 $variables = $librarySets.library_sets
 Write-Output "Values are below: -" 
-Write-Output "$variables"
+Write-Output "This is the value ----- $variables"
 
 
 if ($null -eq $variables) {
