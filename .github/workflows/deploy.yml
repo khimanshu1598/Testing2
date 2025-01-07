@@ -28,7 +28,10 @@ jobs:
     steps:
       - id: set-matrix
         run: |
+          # Initialize an empty array for environments
           environments=()
+
+          # Check each input and add selected environments to the array
           if [[ "${{ inputs.ls6_global_00 }}" == "true" ]]; then
             environments+=("LS6 Global - 00")
           fi
@@ -43,7 +46,7 @@ jobs:
           fi
 
           # Convert the environments array to a valid JSON array format
-          matrix_json="{\"environment\":$(echo "${environments[@]}" | jq -R -s -c 'split("\n")[:-1]')}"
+          matrix_json="[\"$(echo ${environments[@]} | sed 's/ /", "/g')\"]"
           echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
 
   deploy:
@@ -61,6 +64,10 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Debug Matrix Output
+        run: |
+          echo "Matrix: ${{ needs.create-environment-matrix.outputs.matrix }}"
 
       - name: Install PowerShell-YAML Module
         shell: pwsh
