@@ -40,7 +40,7 @@ jobs:
           if [[ "${{ inputs.prod_global_01 }}" == "true" ]]; then
             environments+=("Production Global - 01")
           fi
-          matrix_json="{\"environment\":[\"${environments[@]}\"]}"
+          matrix_json="{\"environment\":$(echo "${environments[@]}" | jq -R -s -c 'split("\n")[:-1]')}"
           echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
 
   deploy:
@@ -55,6 +55,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Install PowerShell-YAML Module
         shell: pwsh
@@ -64,4 +66,6 @@ jobs:
       - name: Execute PowerShell Script
         shell: pwsh
         run: |
+          # Your script to generate consolidated-variables.yml should go here
+          # Then run fetch-vars.ps1
           ./fetch-vars.ps1 -environment "${{ matrix.environment }}"
