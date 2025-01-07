@@ -1,76 +1,45 @@
 name: Deploy Environment
-
 on:
   workflow_dispatch:
     inputs:
-      ls6_global_00:
-        description: 'LS6 Global - 00'
-        type: boolean
-        required: false
-      ls6_global_01:
-        description: 'LS6 Global - 01'
-        type: boolean
-        required: false
-      prod_global_00:
-        description: 'Production Global - 00'
-        type: boolean
-        required: false
-      prod_global_01:
-        description: 'Production Global - 01'
-        type: boolean
-        required: false
+      environments:
+        description: 'Target Environments'
+        required: true
+        type: multi-select
+        options:
+          - "LS6 Global - 00"
+          - "LS6 Global - 01"
+          - "Production Global - 00"
+          - "Production Global - 01"
 
 jobs:
-  prepare-matrix:
-    runs-on: windows-latest
-    outputs:
-      environments: ${{ steps.set-matrix.outputs.environments }}
-    steps:
-      - id: set-matrix
-        run: |
-          # Initialize an empty array
-          $environments = @()  # Use @() to initialize the array
-
-          # Add environments based on the inputs provided
-          if ("${{ inputs.ls6_global_00 }}" -eq "true") { $environments += "LS6 Global - 00" }
-          if ("${{ inputs.ls6_global_01 }}" -eq "true") { $environments += "LS6 Global - 01" }
-          if ("${{ inputs.prod_global_00 }}" -eq "true") { $environments += "Production Global - 00" }
-          if ("${{ inputs.prod_global_01 }}" -eq "true") { $environments += "Production Global - 01" }
-
-          # Convert the environments array to a compact JSON string
-          $json = $environments | ConvertTo-Json -Compress
-
-          # Output the environments list
-          echo "environments=$json" >> $env:GITHUB_OUTPUT
-        shell: pwsh
-
   deploy:
-    needs: prepare-matrix
+    strategy:
+      matrix:
+        environment: ${{ fromJSON(github.event.inputs.environments) }}
+      max-parallel: 1  # This ensures sequential execution
+    
     runs-on: windows-latest
+    environment: ${{ matrix.environment }}
+
     steps:
       - uses: actions/checkout@v3
 
       - name: Install PowerShell-YAML Module
         shell: pwsh
         run: |
-          try {
-              Install-Module -Name powershell-yaml -Force -Scope CurrentUser -AllowClobber
-          } catch {
-              Write-Error "Failed to install powershell-yaml module: $_"
-              exit 1
-          }
+          Install-Module -Name powershell-yaml -Force -Scope CurrentUser
 
-      - name: Debugging - Check parsed environments
+      - name: Consolidate Environment Variables
+        id: consolidate_vars
         shell: pwsh
         run: |
-          # Parse the environments passed from the previous step
-          $environments = ${{ fromJson(needs.prepare-matrix.outputs.environments) }}
+          $environment = "${{ matrix.environment }}"
+          # Rest of your consolidation script remains the same
 
-          # Debugging: Print the environments array
-          Write-Output "Environments to process: $($environments -join ', ')"
-
-          # Loop through each environment and process
-          foreach ($environment in $environments) {
-              Write-Output "Processing environment: $environment"
-              ./fetch-vars.ps1 -environment $environment
-          }
+      - name: Execute PowerShell Script
+        shell: pwsh
+        run: |
+          Install-Module -Name powershell-yaml -Force -Scope CurrentUser
+          Import-Module powershell-yaml
+          ./fetch-vars.ps1 -environment "${{ matrix.environment }}"
