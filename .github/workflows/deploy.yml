@@ -1,4 +1,5 @@
 name: Deploy Environment
+
 on:
   workflow_dispatch:
     inputs:
@@ -18,7 +19,6 @@ on:
         description: 'Production Global - 01'
         type: boolean
         default: false
-      # Add more inputs as needed...
 
 jobs:
   create-environment-matrix:
@@ -39,31 +39,28 @@ jobs:
             "ls6_global_01" = "LS6 Global - 01"
             "prod_global_00" = "Production Global - 00"
             "prod_global_01" = "Production Global - 01"
-            # Add more mappings as needed...
           }
           
           # Access inputs passed via environment variables
-          Write-Output "Debug: Inputs passed to the script:"
           foreach ($key in $envMap.Keys) {
-              # Construct the environment variable name and get its value
               $envVariableName = $key.ToUpper()
               $inputValue = (Get-Item -Path "Env:\$envVariableName").Value
-              Write-Output "$($key): $($inputValue)"
               if ($inputValue -eq 'true') {
                   $environments += $envMap[$key]
               }
           }
           
-          # Debugging: Output the final environments array
-          Write-Output "Debug: Final environments array:"
-          Write-Output $environments
+          # Ensure the environments array is in the correct format for GitHub Actions
+          if ($environments.Count -eq 1) {
+              $matrixJson = @{ "include" = @(@{ "environment" = $environments[0] }) } | ConvertTo-Json -Depth 2 -Compress
+          } elseif ($environments.Count -gt 1) {
+              $matrixJson = @{ "include" = $environments | ForEach-Object { @{ "environment" = $_ } } } | ConvertTo-Json -Depth 2 -Compress
+          } else {
+              Write-Output "No environments selected. Exiting."
+              exit 1
+          }
           
-          # Convert the array to JSON format
-          $matrixJson = @{ "include" = $environments | ForEach-Object { @{ "environment" = $_ } } } | ConvertTo-Json -Depth 2 -Compress
-          Write-Output "Debug: Matrix JSON:"
-          Write-Output $matrixJson
-          
-          # Write the JSON as a single-line string to $env:GITHUB_OUTPUT
+          # Write the JSON to the output
           Write-Output "matrix=$matrixJson" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
     env:
       ls6_global_00: ${{ inputs.ls6_global_00 }}
