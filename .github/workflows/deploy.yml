@@ -59,10 +59,11 @@ jobs:
           Write-Output $environments
           
           # Convert the array to JSON format
-          $matrixJson = @{ "include" = $environments | ForEach-Object { @{ "environment" = $_ } } } | ConvertTo-Json -Depth 2
+          $matrixJson = @{ "include" = $environments | ForEach-Object { @{ "environment" = $_ } } } | ConvertTo-Json -Depth 2 -Compress
           Write-Output "Debug: Matrix JSON:"
           Write-Output $matrixJson
           
+          # Write the JSON as a single-line string to $env:GITHUB_OUTPUT
           Write-Output "matrix=$matrixJson" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
     env:
       ls6_global_00: ${{ inputs.ls6_global_00 }}
