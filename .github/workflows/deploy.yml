@@ -1,5 +1,4 @@
 name: Deploy Environment
-
 on:
   workflow_dispatch:
     inputs:
@@ -19,62 +18,57 @@ on:
         description: 'Production Global - 01'
         type: boolean
         default: false
+      # Add more inputs as needed...
 
 jobs:
   create-environment-matrix:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - id: set-matrix
+      - name: Build Environment Matrix
+        id: set-matrix
+        shell: pwsh
         run: |
-          # Initialize an empty array for environments
-          environments=()
+          # Initialize an array for environments
+          $environments = @()
+          
+          # Define a mapping of inputs to environment names
+          $envMap = @{
+            "ls6_global_00" = "LS6 Global - 00"
+            "ls6_global_01" = "LS6 Global - 01"
+            "prod_global_00" = "Production Global - 00"
+            "prod_global_01" = "Production Global - 01"
+            # Add more mappings as needed...
+          }
 
-          # Check each input and add selected environments to the array
-          if [[ "${{ inputs.ls6_global_00 }}" == "true" ]]; then
-            environments+=("LS6 Global - 00")
-          fi
-          if [[ "${{ inputs.ls6_global_01 }}" == "true" ]]; then
-            environments+=("LS6 Global - 01")
-          fi
-          if [[ "${{ inputs.prod_global_00 }}" == "true" ]]; then
-            environments+=("Production Global - 00")
-          fi
-          if [[ "${{ inputs.prod_global_01 }}" == "true" ]]; then
-            environments+=("Production Global - 01")
-          fi
+          # Loop through the mapping and add selected environments
+          foreach ($key in $envMap.Keys) {
+              if ('${{ inputs.' + $key + ' }}' -eq 'true') {
+                  $environments += $envMap[$key]
+              }
+          }
 
-          # Convert the environments array to a valid JSON array format
-          matrix_json="[\"$(echo ${environments[@]} | sed 's/ /", "/g')\"]"
-          echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
+          # Convert the array to JSON format
+          $matrixJson = @{"environment" = $environments} | ConvertTo-Json -Depth 1
+          Write-Output "matrix=$matrixJson" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
   deploy:
     needs: create-environment-matrix
     strategy:
-      matrix:
-        environment: ${{ fromJson(needs.create-environment-matrix.outputs.matrix) }}
-      fail-fast: false
+      matrix: ${{ fromJson(needs.create-environment-matrix.outputs.matrix) }}
       max-parallel: 1
-
+      fail-fast: false
     runs-on: windows-latest
     environment: ${{ matrix.environment }}
 
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Debug Matrix Output
-        run: |
-          echo "Matrix: ${{ needs.create-environment-matrix.outputs.matrix }}"
 
       - name: Install PowerShell-YAML Module
         shell: pwsh
-        run: |
-          Install-Module -Name powershell-yaml -Force -Scope CurrentUser
+        run: Install-Module -Name powershell-yaml -Force -Scope CurrentUser
 
       - name: Execute PowerShell Script
         shell: pwsh
-        run: |
-          ./fetch-vars.ps1 -environment "${{ matrix.environment }}"
+        run: ./fetch-vars.ps1 -environment "${{ matrix.environment }}"
