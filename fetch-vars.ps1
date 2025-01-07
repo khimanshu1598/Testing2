@@ -21,22 +21,24 @@ if ($null -eq $librarySets.library_sets) {
     exit 1
 }
 
-# Initialize results
+# Initialize result objects
 $environmentVariables = @{}
 $defaultVariables = @{}
 
-# Loop through all variables in library_sets
+# Process all variables in the library_sets section
 foreach ($variable in $librarySets.library_sets.GetEnumerator()) {
     $variableName = $variable.Key
     $variableData = $variable.Value
 
-    # Check if the variable has environment-specific values
+    # Check for environment-specific data
     if ($variableData.ContainsKey("environments")) {
         if ($variableData.environments.ContainsKey($environment)) {
             $environmentVariables[$variableName] = $variableData.environments[$environment].value
         }
-    } elseif ($variableData.ContainsKey("value")) {
-        # If no environment-specific data, treat as a global/default variable
+    }
+
+    # Check for global/default data
+    if ($variableData.ContainsKey("value")) {
         $defaultVariables[$variableName] = $variableData.value
     }
 }
