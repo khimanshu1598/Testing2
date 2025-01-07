@@ -8,19 +8,20 @@ if (-not (Get-Module -ListAvailable -Name powershell-yaml)) {
 }
 Import-Module powershell-yaml
 
-# Path to the consolidated YAML file
-$yamlPath = ".\consolidated-variables.yml"
+# Create the consolidated YAML content based on environment
+$yamlContent = @"
+# Variables for $environment
+CellName:
+  value: "$environment"
+DefaultVar:
+  value: "default-value-for-$environment"
+"@
 
-# Load the YAML file
-$yamlContent = Get-Content -Raw -Path $yamlPath
-$librarySets = $yamlContent | ConvertFrom-Yaml
+# Write the YAML content to a file
+$yamlContent | Out-File -FilePath ".\consolidated-variables.yml"
 
-# Print the content of the loaded YAML for debugging
-Write-Output "Loaded YAML Content:"
-Write-Output $librarySets
-
-# Directly access the variables dictionary
-$variables = $librarySets
+# Load and parse the YAML
+$variables = $yamlContent | ConvertFrom-Yaml
 
 # Debugging: Print the fetched variables
 Write-Output "Fetched Variables:"
