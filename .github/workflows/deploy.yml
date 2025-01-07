@@ -41,26 +41,26 @@ jobs:
             "prod_global_01" = "Production Global - 01"
             # Add more mappings as needed...
           }
-
+          
           # Access inputs passed via environment variables
           Write-Output "Debug: Inputs passed to the script:"
           foreach ($key in $envMap.Keys) {
-              $inputValue = $env:($key.ToUpper())
+              $inputValue = ${env:$key.ToUpper()}
               Write-Output "$key: $inputValue"
               if ($inputValue -eq 'true') {
                   $environments += $envMap[$key]
               }
           }
-
+          
           # Debugging: Output the final environments array
           Write-Output "Debug: Final environments array:"
           Write-Output $environments
-
+          
           # Convert the array to JSON format
           $matrixJson = @{"environment" = $environments} | ConvertTo-Json -Depth 1
           Write-Output "Debug: Matrix JSON:"
           Write-Output $matrixJson
-
+          
           Write-Output "matrix=$matrixJson" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
     env:
       ls6_global_00: ${{ inputs.ls6_global_00 }}
