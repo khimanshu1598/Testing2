@@ -9,7 +9,7 @@ if (-not (Get-Module -ListAvailable -Name powershell-yaml)) {
 Import-Module powershell-yaml
 
 # Path to the consolidated YAML file
-$yamlPath = ".\library-variables.yml"  # Make sure this path is correct
+$yamlPath = ".\consolidated-variables.yml"
 
 # Load the YAML file
 $yamlContent = Get-Content -Raw -Path $yamlPath
@@ -19,7 +19,7 @@ $librarySets = $yamlContent | ConvertFrom-Yaml
 Write-Output "Loaded YAML Content:"
 Write-Output $librarySets
 
-# Access the variables dictionary
+# Directly access the variables dictionary
 $variables = $librarySets
 
 # Debugging: Print the fetched variables
@@ -32,11 +32,10 @@ if ($null -eq $variables) {
     exit 1
 }
 
-# Access the environment-specific values
-if ($variables.ContainsKey("CellName") -and $variables["CellName"].environments.ContainsKey($environment)) {
-    $variableName = $variables["CellName"].environments[$environment].value
+if ($variables.ContainsKey("CellName")) {
+    $variableName = $variables["CellName"].value
 } else {
-    Write-Output "CellName not found for the environment $environment"
+    Write-Output "CellName not found in variables"
     exit 1
 }
 
@@ -48,4 +47,4 @@ if ($variables.ContainsKey("DefaultVar")) {
 }
 
 # Display the message
-Write-Output "Hi $variableName, This workflow is running for $environment and has the default value as $defaultValue"
+Write-Output "Hi $variableName, This workflow is running for $environment and is having default value as $defaultValue"
