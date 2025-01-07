@@ -59,7 +59,7 @@ jobs:
           Write-Output $environments
           
           # Convert the array to JSON format
-          $matrixJson = @{"environment" = $environments} | ConvertTo-Json -Depth 1
+          $matrixJson = @{ "include" = $environments | ForEach-Object { @{ "environment" = $_ } } } | ConvertTo-Json -Depth 2
           Write-Output "Debug: Matrix JSON:"
           Write-Output $matrixJson
           
