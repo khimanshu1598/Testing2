@@ -32,7 +32,7 @@ jobs:
         run: |
           # Initialize an array for environments
           $environments = @()
-          
+
           # Define a mapping of inputs to environment names
           $envMap = @{
             "ls6_global_00" = "LS6 Global - 00"
@@ -42,9 +42,10 @@ jobs:
             # Add more mappings as needed...
           }
 
-          # Loop through the mapping and add selected environments
+          # Access GitHub Action inputs dynamically
           foreach ($key in $envMap.Keys) {
-              if ('${{ inputs.' + $key + ' }}' -eq 'true') {
+              $inputValue = (Get-Variable -Name $key -ErrorAction SilentlyContinue).Value
+              if ($inputValue -eq $true) {
                   $environments += $envMap[$key]
               }
           }
