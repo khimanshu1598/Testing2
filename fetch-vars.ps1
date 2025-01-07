@@ -15,37 +15,27 @@ $yamlPath = ".\library-variables.yml"
 $yamlContent = Get-Content -Raw -Path $yamlPath
 $librarySets = $yamlContent | ConvertFrom-Yaml
 
-# Validate the structure
-if ($null -eq $librarySets.library_sets) {
-    Write-Output "Error: library_sets section is missing. Exiting."
+# Fetch variables for the selected environment
+$variables = $librarySets.library_sets
+
+if ($null -eq $variables) {
+    Write-Output "Variables object is null. Exiting."
     exit 1
 }
 
-# Initialize result objects
-$environmentVariables = @{}
-$defaultVariables = @{}
-
-# Process all variables in the library_sets section
-foreach ($variable in $librarySets.library_sets.GetEnumerator()) {
-    $variableName = $variable.Key
-    $variableData = $variable.Value
-
-    # Check for environment-specific data
-    if ($variableData.ContainsKey("environments")) {
-        if ($variableData.environments.ContainsKey($environment)) {
-            $environmentVariables[$variableName] = $variableData.environments[$environment].value
-        }
-    }
-
-    # Check for global/default data
-    if ($variableData.ContainsKey("value")) {
-        $defaultVariables[$variableName] = $variableData.value
-    }
+if ($variables["CellName"].environments.ContainsKey($environment)) {
+    $variableName = $variables["CellName"].environments[$environment].value
+} else {
+    Write-Output "Environment '$environment' not found in CellName. Exiting."
+    exit 1
 }
 
-# Output the results
-Write-Output "Environment-Specific Variables for '$environment':"
-$environmentVariables | ForEach-Object { Write-Output "$($_.Key): $($_.Value)" }
+if ($variables.ContainsKey("DefaultVar")) {
+    $defaultValue = $variables["DefaultVar"].value
+} else {
+    Write-Output "DefaultVar not found in variables. Exiting."
+    exit 1
+}
 
-Write-Output "Global/Default Variables:"
-$defaultVariables | ForEach-Object { Write-Output "$($_.Key): $($_.Value)" }
+# Display the message
+Write-Output "Hi $variableName, This workflow is running for $environment and is having default value as $defaultValue"
