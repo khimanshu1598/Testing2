@@ -15,30 +15,35 @@ $yamlPath = ".\library-variables.yml"
 $yamlContent = Get-Content -Raw -Path $yamlPath
 $librarySets = $yamlContent | ConvertFrom-Yaml
 
+# Debug: Print the loaded YAML content
+Write-Output "Loaded YAML Content:"
+Write-Output $librarySets
+
 # Validate the structure
 if ($null -eq $librarySets.library_sets) {
     Write-Output "Error: library_sets section is missing. Exiting."
     exit 1
 }
 
-# Initialize result objects
+# Initialize results
 $environmentVariables = @{}
 $defaultVariables = @{}
 
-# Process all variables in the library_sets section
+# Loop through all variables in library_sets
 foreach ($variable in $librarySets.library_sets.GetEnumerator()) {
     $variableName = $variable.Key
     $variableData = $variable.Value
 
-    # Check for environment-specific data
+    # Debug: Print each variable being processed
+    Write-Output "Processing Variable: $variableName"
+
+    # Check if the variable has environment-specific values
     if ($variableData.ContainsKey("environments")) {
         if ($variableData.environments.ContainsKey($environment)) {
             $environmentVariables[$variableName] = $variableData.environments[$environment].value
         }
-    }
-
-    # Check for global/default data
-    if ($variableData.ContainsKey("value")) {
+    } elseif ($variableData.ContainsKey("value")) {
+        # If no environment-specific data, treat as a global/default variable
         $defaultVariables[$variableName] = $variableData.value
     }
 }
