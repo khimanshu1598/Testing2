@@ -22,7 +22,7 @@ on:
 
 jobs:
   create-environment-matrix:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
@@ -41,9 +41,9 @@ jobs:
           if [[ "${{ inputs.prod_global_01 }}" == "true" ]]; then
             environments+=("Production Global - 01")
           fi
-
-          # Format the environments into a JSON array for the matrix
-          matrix_json="{\"environment\":$(echo "${environments[@]}" | jq -R -s -c 'split("\n")[:-1]')}"
+          
+          # Convert the array to a valid JSON array
+          matrix_json="[\"$(IFS=,; echo "${environments[*]}")\"]"
           echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
 
   deploy:
@@ -51,9 +51,9 @@ jobs:
     strategy:
       matrix:
         environment: ${{ fromJson(needs.create-environment-matrix.outputs.matrix) }}
-      max-parallel: 1
       fail-fast: false
-    
+      max-parallel: 1  # Limit to 1 job at a time to avoid parallelism issues
+
     runs-on: windows-latest
     environment: ${{ matrix.environment }}
 
@@ -70,6 +70,4 @@ jobs:
       - name: Execute PowerShell Script
         shell: pwsh
         run: |
-          # Your script to generate consolidated-variables.yml should go here
-          # Then run fetch-vars.ps1
           ./fetch-vars.ps1 -environment "${{ matrix.environment }}"
