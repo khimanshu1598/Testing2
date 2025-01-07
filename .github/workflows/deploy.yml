@@ -45,8 +45,9 @@ jobs:
           # Access inputs passed via environment variables
           Write-Output "Debug: Inputs passed to the script:"
           foreach ($key in $envMap.Keys) {
-              # Use Get-Item to access the environment variable dynamically
-              $inputValue = (Get-Item -Path Env:\$key.ToUpper()).Value
+              # Construct the environment variable name and get its value
+              $envVariableName = $key.ToUpper()
+              $inputValue = (Get-Item -Path "Env:\$envVariableName").Value
               Write-Output "$key: $inputValue"
               if ($inputValue -eq 'true') {
                   $environments += $envMap[$key]
