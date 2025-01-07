@@ -1,4 +1,5 @@
 name: Deploy Environment
+
 on:
   workflow_dispatch:
     inputs:
@@ -40,13 +41,16 @@ jobs:
           if [[ "${{ inputs.prod_global_01 }}" == "true" ]]; then
             environments+=("Production Global - 01")
           fi
+
+          # Format the environments into a JSON array for the matrix
           matrix_json="{\"environment\":$(echo "${environments[@]}" | jq -R -s -c 'split("\n")[:-1]')}"
           echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
 
   deploy:
     needs: create-environment-matrix
     strategy:
-      matrix: ${{ fromJson(needs.create-environment-matrix.outputs.matrix) }}
+      matrix:
+        environment: ${{ fromJson(needs.create-environment-matrix.outputs.matrix) }}
       max-parallel: 1
       fail-fast: false
     
