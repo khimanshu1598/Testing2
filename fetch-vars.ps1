@@ -15,42 +15,27 @@ $yamlPath = ".\library-variables.yml"
 $yamlContent = Get-Content -Raw -Path $yamlPath
 $librarySets = $yamlContent | ConvertFrom-Yaml
 
-# Debug: Print the loaded YAML content
-Write-Output "Loaded YAML Content:"
-Write-Output $librarySets
+# Fetch variables for the selected environment
+$variables = $librarySets.library_sets
 
-# Validate the structure
-if ($null -eq $librarySets.library_sets) {
-    Write-Output "Error: library_sets section is missing. Exiting."
+if ($null -eq $variables) {
+    Write-Output "Variables object is null. Exiting."
     exit 1
 }
 
-# Initialize results
-$environmentVariables = @{}
-$defaultVariables = @{}
-
-# Loop through all variables in library_sets
-foreach ($variable in $librarySets.library_sets.GetEnumerator()) {
-    $variableName = $variable.Key
-    $variableData = $variable.Value
-
-    # Debug: Print each variable being processed
-    Write-Output "Processing Variable: $variableName"
-
-    # Check if the variable has environment-specific values
-    if ($variableData.ContainsKey("environments")) {
-        if ($variableData.environments.ContainsKey($environment)) {
-            $environmentVariables[$variableName] = $variableData.environments[$environment].value
-        }
-    } elseif ($variableData.ContainsKey("value")) {
-        # If no environment-specific data, treat as a global/default variable
-        $defaultVariables[$variableName] = $variableData.value
-    }
+if ($variables["CellName"].environments.ContainsKey($environment)) {
+    $variableName = $variables["CellName"].environments[$environment].value
+} else {
+    Write-Output "Environment '$environment' not found in CellName. Exiting."
+    exit 1
 }
 
-# Output the results
-Write-Output "Environment-Specific Variables for '$environment':"
-$environmentVariables | ForEach-Object { Write-Output "$($_.Key): $($_.Value)" }
+if ($variables.ContainsKey("DefaultVar")) {
+    $defaultValue = $variables["DefaultVar"].value
+} else {
+    Write-Output "DefaultVar not found in variables. Exiting."
+    exit 1
+}
 
-Write-Output "Global/Default Variables:"
-$defaultVariables | ForEach-Object { Write-Output "$($_.Key): $($_.Value)" }
+# Display the message
+Write-Output "Hi $variableName, This workflow is running for $environment and is having default value as $defaultValue"
