@@ -22,32 +22,28 @@ on:
 
 jobs:
   create-environment-matrix:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - id: set-matrix
-        shell: pwsh  # Ensure this step runs in PowerShell
         run: |
-          # Initialize an empty array for environments
-          $environments = @()
-
-          # Check each input and add selected environments to the array
-          if (${{ inputs.ls6_global_00 }} -eq "true") {
-            $environments += "LS6 Global - 00"
-          }
-          if (${{ inputs.ls6_global_01 }} -eq "true") {
-            $environments += "LS6 Global - 01"
-          }
-          if (${{ inputs.prod_global_00 }} -eq "true") {
-            $environments += "Production Global - 00"
-          }
-          if (${{ inputs.prod_global_01 }} -eq "true") {
-            $environments += "Production Global - 01"
-          }
+          environments=()
+          if [[ "${{ inputs.ls6_global_00 }}" == "true" ]]; then
+            environments+=("LS6 Global - 00")
+          fi
+          if [[ "${{ inputs.ls6_global_01 }}" == "true" ]]; then
+            environments+=("LS6 Global - 01")
+          fi
+          if [[ "${{ inputs.prod_global_00 }}" == "true" ]]; then
+            environments+=("Production Global - 00")
+          fi
+          if [[ "${{ inputs.prod_global_01 }}" == "true" ]]; then
+            environments+=("Production Global - 01")
+          fi
 
           # Convert the environments array to a valid JSON array format
-          $matrix_json = $environments | ConvertTo-Json -Depth 1
+          matrix_json="{\"environment\":$(echo "${environments[@]}" | jq -R -s -c 'split("\n")[:-1]')}"
           echo "matrix=$matrix_json" >> $GITHUB_OUTPUT
 
   deploy:
