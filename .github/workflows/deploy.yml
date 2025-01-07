@@ -32,7 +32,7 @@ jobs:
         run: |
           # Initialize an array for environments
           $environments = @()
-
+          
           # Define a mapping of inputs to environment names
           $envMap = @{
             "ls6_global_00" = "LS6 Global - 00"
@@ -42,17 +42,31 @@ jobs:
             # Add more mappings as needed...
           }
 
-          # Access GitHub Action inputs dynamically
+          # Access inputs passed via environment variables
+          Write-Output "Debug: Inputs passed to the script:"
           foreach ($key in $envMap.Keys) {
-              $inputValue = (Get-Variable -Name $key -ErrorAction SilentlyContinue).Value
-              if ($inputValue -eq $true) {
+              $inputValue = $env:($key.ToUpper())
+              Write-Output "$key: $inputValue"
+              if ($inputValue -eq 'true') {
                   $environments += $envMap[$key]
               }
           }
 
+          # Debugging: Output the final environments array
+          Write-Output "Debug: Final environments array:"
+          Write-Output $environments
+
           # Convert the array to JSON format
           $matrixJson = @{"environment" = $environments} | ConvertTo-Json -Depth 1
+          Write-Output "Debug: Matrix JSON:"
+          Write-Output $matrixJson
+
           Write-Output "matrix=$matrixJson" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+    env:
+      ls6_global_00: ${{ inputs.ls6_global_00 }}
+      ls6_global_01: ${{ inputs.ls6_global_01 }}
+      prod_global_00: ${{ inputs.prod_global_00 }}
+      prod_global_01: ${{ inputs.prod_global_01 }}
 
   deploy:
     needs: create-environment-matrix
