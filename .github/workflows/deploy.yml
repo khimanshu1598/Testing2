@@ -48,7 +48,7 @@ jobs:
               # Construct the environment variable name and get its value
               $envVariableName = $key.ToUpper()
               $inputValue = (Get-Item -Path "Env:\$envVariableName").Value
-              Write-Output "$key: $inputValue"
+              Write-Output "$($key): $($inputValue)"
               if ($inputValue -eq 'true') {
                   $environments += $envMap[$key]
               }
