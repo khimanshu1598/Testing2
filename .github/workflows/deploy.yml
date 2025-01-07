@@ -2,22 +2,53 @@ name: Deploy Environment
 on:
   workflow_dispatch:
     inputs:
-      environments:
-        description: 'Target Environments'
-        required: true
-        type: multi-select
-        options:
-          - "LS6 Global - 00"
-          - "LS6 Global - 01"
-          - "Production Global - 00"
-          - "Production Global - 01"
+      ls6_global_00:
+        description: 'LS6 Global - 00'
+        type: boolean
+        default: false
+      ls6_global_01:
+        description: 'LS6 Global - 01'
+        type: boolean
+        default: false
+      prod_global_00:
+        description: 'Production Global - 00'
+        type: boolean
+        default: false
+      prod_global_01:
+        description: 'Production Global - 01'
+        type: boolean
+        default: false
 
 jobs:
+  create-environment-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - id: set-matrix
+        run: |
+          environments=()
+          if [[ "${{ inputs.ls6_global_00 }}" == "true" ]]; then
+            environments+=("LS6 Global - 00")
+          fi
+          if [[ "${{ inputs.ls6_global_01 }}" == "true" ]]; then
+            environments+=("LS6 Global - 01")
+          fi
+          if [[ "${{ inputs.prod_global_00 }}" == "true" ]]; then
+            environments+=("Production Global - 00")
+          fi
+          if [[ "${{ inputs.prod_global_01 }}" == "true" ]]; then
+            environments+=("Production Global - 01")
+          fi
+          echo "matrix=$(echo "${environments[@]}" | jq -R -s -c 'split(" ")')" >> $GITHUB_OUTPUT
+
   deploy:
+    needs: create-environment-matrix
+    if: needs.create-environment-matrix.outputs.matrix != '[]'
     strategy:
       matrix:
-        environment: ${{ fromJSON(github.event.inputs.environments) }}
-      max-parallel: 1  # This ensures sequential execution
+        environment: ${{ fromJson(needs.create-environment-matrix.outputs.matrix) }}
+      max-parallel: 1
     
     runs-on: windows-latest
     environment: ${{ matrix.environment }}
@@ -35,7 +66,32 @@ jobs:
         shell: pwsh
         run: |
           $environment = "${{ matrix.environment }}"
-          # Rest of your consolidation script remains the same
+          $yamlPath = "library-variables.yml"
+          $outputPath = "consolidated-variables.yml"
+          
+          Install-Module -Name powershell-yaml -Force -Scope CurrentUser
+          Import-Module powershell-yaml
+          
+          $yamlContent = Get-Content -Raw -Path $yamlPath
+          $librarySets = $yamlContent | ConvertFrom-Yaml
+
+          $consolidated = @{}
+
+          foreach ($set in $librarySets.library_sets.GetEnumerator()) {
+            $varName = $set.Key
+            if ($set.Value.environments -ne $null) {
+              foreach ($env in $set.Value.environments.GetEnumerator()) {
+                if ($env.Key -eq $environment) {
+                  $consolidated[$varName] = @{ value = $env.Value.value }
+                }
+              }
+            }
+            if ($set.Value -is [System.Collections.Hashtable] -and $set.Value.ContainsKey("value")) {
+              $consolidated[$varName] = @{ value = $set.Value.value }
+            }
+          }
+
+          $consolidated | ConvertTo-Yaml | Set-Content -Path $outputPath
 
       - name: Execute PowerShell Script
         shell: pwsh
